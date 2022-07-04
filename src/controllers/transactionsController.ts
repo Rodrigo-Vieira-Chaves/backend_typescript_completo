@@ -4,14 +4,9 @@ import { transactionsService } from '../services/transactionsService';
 
 class TransactionsController extends Controller
 {
-    async getAllTransactions (req: Request, res: Response)
+    async getStatementsOfAccount (req: Request, res: Response)
     {
-        this.callService(res, transactionsService.getAllTransactions.bind(transactionsService));
-    }
-
-    async getTransactionsFromAccount (req: Request, res: Response)
-    {
-        this.callService(res, transactionsService.getTransactionsFromAccount.bind(transactionsService), req.body);
+        this.callService(res, transactionsService.getStatementsOfAccount.bind(transactionsService), req.body);
     }
 
     async makeDeposit (req: Request, res: Response)

@@ -3,7 +3,7 @@ import { AccountValidateDTO } from './AccountValidateDTO';
 interface DepositOrWithdrawRequestDTO
 {
   ammount: number;
-  accountRequest: AccountValidateDTO;
+  source: AccountValidateDTO;
 }
 
 export { DepositOrWithdrawRequestDTO };

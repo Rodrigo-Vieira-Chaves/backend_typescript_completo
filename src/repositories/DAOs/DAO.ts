@@ -1,4 +1,4 @@
-import { database } from '../database';
+import { databaseInstance } from '../database';
 
 class DAO
 {
@@ -6,7 +6,7 @@ class DAO
     {
         return new Promise<T[]>((resolve, reject) =>
         {
-            database.all(sql, parameters, (err, rows) =>
+            databaseInstance.getDatabase().all(sql, parameters, (err, rows) =>
             {
                 if (err)
                 {

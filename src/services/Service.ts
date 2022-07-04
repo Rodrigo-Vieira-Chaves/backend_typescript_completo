@@ -3,19 +3,21 @@ import { ServiceResponse } from '../responses/ServiceResponse';
 
 class Service
 {
-    protected serviceResponseBuilder (daoResult: any[], emptyMessage: string, successCode = 200)
+    protected serviceResponseBuilder (DAOResult: any[], emptyMessage: string, successCode = 200, echo: any = null): ServiceResponse
     {
-        if (daoResult.length <= 0)
+        if (DAOResult.length <= 0)
         {
             throw new EmptyError(emptyMessage);
         }
 
-        const data = daoResult.length === 1 ? daoResult.pop() : daoResult;
+        const serviceResponse =
+            {
+                code: successCode,
+                echo,
+                data: DAOResult.length === 1 ? DAOResult.pop() : DAOResult
+            };
 
-        return {
-            code: successCode,
-            data
-        } as ServiceResponse;
+        return serviceResponse;
     }
 }
 

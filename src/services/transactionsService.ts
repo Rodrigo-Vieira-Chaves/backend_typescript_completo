@@ -7,6 +7,7 @@ import { TransferRequestDTO } from '../models/DTOs/TransferRequestDTO';
 import { ValidationError } from '../errors/ValidationError';
 import { accountValidator } from '../validators/accountValidator';
 import { accountsService } from './accountsService';
+import { clientsService } from './clientsService';
 import { transactionsDAO } from '../repositories/DAOs/transactionsDAO';
 import { transactionsPropertiesValidator } from '../validators/transactionsPropertiesValidator';
 
@@ -23,26 +24,35 @@ class TransactionsService extends Service
         return this.serviceResponseBuilder(result, 'Não há transações efetuadas.');
     }
 
-    async getTransactionsFromAccount (request: AccountValidateDTO)
+    async getStatementsOfAccount (request: AccountValidateDTO)
     {
         const accountRetrieved = await accountValidator.validateAccountWithClient(request.clientCPF, request.account);
         accountValidator.validateAccountPassword(request.account.password as string, accountRetrieved.password as string);
         const result = await transactionsDAO.getTransactionsByAccountID(accountRetrieved.accountID as string);
 
-        return this.serviceResponseBuilder(result, 'Essa conta não possui transações.');
+        delete accountRetrieved.password;
+        const echo =
+        {
+            client: (await clientsService.getClientByCPF(request.clientCPF)).data,
+            account: accountRetrieved
+        };
+
+        return this.serviceResponseBuilder(result, 'Essa conta não possui transações.', 200, echo);
     }
 
     async makeDeposit (deposit: DepositOrWithdrawRequestDTO)
     {
         const accountRetrieved =
-        await accountValidator.validateAccountWithClient(deposit.accountRequest.clientCPF, deposit.accountRequest.account);
+        await accountValidator.validateAccountWithClient(deposit.source.clientCPF, deposit.source.account);
 
         const result = await this.createTransaction(
             {
                 accountID: accountRetrieved.accountID,
                 ammount: deposit.ammount,
                 type: TransactionType.DEPOSITO
-            });
+            },
+            deposit
+        );
 
         return result;
     }
@@ -50,16 +60,19 @@ class TransactionsService extends Service
     async makeWithdraw (withdraw: DepositOrWithdrawRequestDTO)
     {
         const accountRetrieved =
-        await accountValidator.validateAccountWithClient(withdraw.accountRequest.clientCPF, withdraw.accountRequest.account);
-        accountValidator.validateAccountPassword(withdraw.accountRequest.account.password as string, accountRetrieved.password as string);
+        await accountValidator.validateAccountWithClient(withdraw.source.clientCPF, withdraw.source.account);
+        accountValidator.validateAccountPassword(withdraw.source.account.password as string, accountRetrieved.password as string);
         await accountValidator.validateAccountBalance(accountRetrieved.accountID as string, withdraw.ammount + this.withdrawFee);
 
+        delete withdraw.source.account.password;
         const result = await this.createTransaction(
             {
                 accountID: accountRetrieved.accountID,
                 ammount: withdraw.ammount,
                 type: TransactionType.SAQUE
-            });
+            },
+            withdraw
+        );
 
         return result;
     }
@@ -77,25 +90,27 @@ class TransactionsService extends Service
             throw new ValidationError('A conta origem e a conta destino devem ser diferentes.');
         }
 
-        const transferTransaction =
-        {
-            accountID: sourceAccount.accountID,
-            ammount: transfer.ammount,
-            type: TransactionType.ENVIO_TRANSFERENCIA
-        };
+        delete transfer.source.account.password;
+        const result = await this.createTransaction(
+            {
+                accountID: sourceAccount.accountID,
+                ammount: transfer.ammount,
+                type: TransactionType.ENVIO_TRANSFERENCIA
+            },
+            transfer
+        );
 
-        const result = await this.createTransaction(transferTransaction);
-
-        transferTransaction.accountID = destinationAccount.accountID;
-        transferTransaction.ammount = transfer.ammount;
-        transferTransaction.type = TransactionType.RECEBIMENTO_TRANSFERENCIA;
-
-        await this.createTransaction(transferTransaction);
+        await this.createTransaction(
+            {
+                accountID: destinationAccount.accountID,
+                ammount: transfer.ammount,
+                type: TransactionType.RECEBIMENTO_TRANSFERENCIA
+            });
 
         return result;
     }
 
-    private async createTransaction (transaction: TransactionDTO)
+    private async createTransaction (transaction: TransactionDTO, echoObject: any = null)
     {
         transactionsPropertiesValidator.validateAll(transaction);
         const result = await transactionsDAO.createTransaction(transaction);
@@ -103,7 +118,7 @@ class TransactionsService extends Service
         await accountsService.updateAccountBalance(transaction.accountID as string, transaction.type, transaction.ammount);
         await this.chargeFees(transaction);
 
-        return this.serviceResponseBuilder(result, `Erro ao criar transação do tipo ${transaction.type}`, 201);
+        return this.serviceResponseBuilder(result, `Erro ao criar transação do tipo ${transaction.type}`, 201, echoObject);
     }
 
     private async chargeFees (transaction: TransactionDTO)

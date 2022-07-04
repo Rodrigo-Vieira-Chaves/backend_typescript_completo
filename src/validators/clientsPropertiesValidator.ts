@@ -5,7 +5,6 @@ import { ValidationError } from '../errors/ValidationError';
 class ClientsPropertiesValidator extends PropertiesValidator
 {
     private readonly nameRegex = /^\s*([A-Za-z]{1,}([\.,] |[-']| ))+[A-Za-z]+\.?\s*$/;
-    private readonly birthdayRegex = /^\d{4}[\/\-](0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])$/;
     private readonly emailRegex = /^(\S+)@((?:(?:(?!-)[a-zA-Z0-9-]{1,62}[a-zA-Z0-9])\.)+[a-zA-Z0-9]{2,12})$/;
     private readonly cpfRegex = /(^\d{3}\.\d{3}\.\d{3}\-\d{2}$)/;
 
@@ -45,10 +44,10 @@ class ClientsPropertiesValidator extends PropertiesValidator
 
     validateBirthday (birthday: string)
     {
-        // FIXME Verificar se é uma data válida.
-        if (!this.birthdayRegex.test(birthday))
+        const birth = birthday.split('-');
+        if (isNaN(Date.parse(`${birth[2]}-${birth[1]}-${birth[0]}`)))
         {
-            throw new ValidationError('A data de aniversário deve possuir o formato: YYYY-MM-DD.');
+            throw new ValidationError('A data de aniversário deve possuir o formato: DD-MM-YYYY e deve ser uma data válida.');
         }
     }
 

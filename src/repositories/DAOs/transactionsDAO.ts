@@ -12,7 +12,8 @@ class TransactionsDAO extends DAO
                             type,
                             ammount,
                             createdAt
-                    FROM transactions WHERE transactionID = ?`;
+                    FROM transactions WHERE transactionID = ?
+                    ORDER BY createdAt DESC`;
 
         return this.executeSQL<TransactionDTO>(sql, [ transactionID ]);
     }
@@ -24,7 +25,8 @@ class TransactionsDAO extends DAO
                             type,
                             ammount,
                             createdAt
-                    FROM transactions WHERE accountID = ?`;
+                    FROM transactions WHERE accountID = ?
+                    ORDER BY createdAt DESC`;
 
         return this.executeSQL<TransactionDTO>(sql, [ accountID ]);
     }
@@ -36,7 +38,8 @@ class TransactionsDAO extends DAO
                             type,
                             ammount,
                             createdAt
-                    FROM transactions WHERE type = ?`;
+                    FROM transactions WHERE type = ?
+                    ORDER BY createdAt DESC`;
 
         return this.executeSQL<TransactionDTO>(sql, [ type ]);
     }
@@ -48,7 +51,8 @@ class TransactionsDAO extends DAO
                             type,
                             ammount,
                             createdAt
-                    FROM transactions`;
+                    FROM transactions
+                    ORDER BY createdAt DESC`;
 
         return this.executeSQL<TransactionDTO>(sql, []);
     }
